@@ -5,7 +5,7 @@
 # @Desc  :
 
 # 训练epochs数量
-EPOCHS = 60
+EPOCHS = 1
 # 训练批大小
 BATCH_SIZE = 128
 # 输入的连续时间序列长度

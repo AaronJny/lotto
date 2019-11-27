@@ -103,6 +103,8 @@ def select_seqs(predicts):
             # 将球保存下来，跳出，开始选取下一个
             balls.append(ball)
             break
+    # 排序，前五个升序，后两个升序
+    balls = sorted(balls[:settings.FRONT_SIZE]) + sorted(balls[settings.FRONT_SIZE:])
     return balls
 
 
