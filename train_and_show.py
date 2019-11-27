@@ -3,6 +3,7 @@
 # @Author: AaronJny
 # @Date  : 2019/10/29
 # @Desc  :
+import os
 import numpy as np
 from models import model
 from dataset import LottoDataSet
@@ -52,9 +53,18 @@ def simulate(test_np_x, test_np_y):
 
 # 初始化数据集
 lotto_dataset = LottoDataSet(train_data_rate=0.9)
+# 创建保存权重的文件夹
+if not os.path.exists(settings.CHECKPOINTS_PATH):
+    os.mkdir(settings.CHECKPOINTS_PATH)
 # 开始训练
 results = []
 for epoch in range(1, settings.EPOCHS + 1):
     model.fit(lotto_dataset.train_np_x, lotto_dataset.train_np_y, batch_size=settings.BATCH_SIZE, epochs=1)
+    # 保存当前权重
+    model.save_weights('{}/model_checkpoint_{}'.format(settings.CHECKPOINTS_PATH, epoch))
     print('已训练完第{}轮，尝试模拟购买彩票...'.format(epoch))
     results.append(simulate(lotto_dataset.test_np_x, lotto_dataset.test_np_y))
+# 输出每一轮的模拟结果
+print(results)
+# 显示每一轮模拟结果的变化趋势
+utils.draw_graph(results)

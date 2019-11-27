@@ -40,14 +40,16 @@ def simulate(test_np_x, test_np_y):
             # 计算奖金
             award = utils.lotto_calculate(outputs, balls)
             money_in += award
-            # if award:
-                # print('{} 中奖了,{}元！ {}/{}'.format(j, award, money_in, money_out))
     print('买彩票花费金钱共{}元，中奖金额共{}元，赚取{}元'.format(money_out, money_in, money_in - money_out))
     return money_in - money_out
 
 
 dataset = LottoDataSet(train_data_rate=0.9)
+# 随机买一百次，并记录每一次收入-支出的差值
 results = []
-for epoch in range(1, 1001):
+for epoch in range(1, 101):
     results.append(simulate(dataset.test_np_x, dataset.test_np_y))
+# 去除最高的和最低的
+results = sorted(results)[1:-1]
+# 计算平均值
 print('mean', sum(results) / len(results))

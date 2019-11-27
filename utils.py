@@ -3,6 +3,7 @@
 # @Author: AaronJny
 # @Date  : 2019/10/29
 # @Desc  : 对数据进行处理和操作的一些工具方法
+import matplotlib.pyplot as plt
 import numpy as np
 import settings
 
@@ -94,7 +95,7 @@ def select_seqs(predicts):
                 ball = sample(predict)
             else:
                 # 如果连续100次都是重复的，就等概率地从所有球里面选择一个
-                ball = sample([1. / len(predicts[i][j]) for __ in predicts[i][j]])
+                ball = sample([1. / len(predict) for __ in predict])
             # 如果选重复了就重新选
             if ball in balls:
                 # 序列不长，就没有使用set优化，直接用list了
@@ -103,3 +104,19 @@ def select_seqs(predicts):
             balls.append(ball)
             break
     return balls
+
+
+def draw_graph(y):
+    """
+    绘制给定列表y的折线图和趋势线
+    """
+    # 横坐标，第几轮训练
+    x = list(range(len(y)))
+    # 拟合一次函数，返回函数参数
+    parameter = np.polyfit(x, y, 1)
+    # 拼接方程
+    f = np.poly1d(parameter)
+    # 绘制图像
+    plt.plot(x, f(x), "r--")
+    plt.plot(y)
+    plt.show()

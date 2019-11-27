@@ -72,7 +72,7 @@ model = models.Model(inputs, outputs)
 # 指定优化器和损失函数
 model.compile(optimizer=keras.optimizers.Adam(),
               loss=[keras.losses.categorical_crossentropy for __ in range(settings.FRONT_SIZE + settings.BACK_SIZE)],
-              loss_weights=[0.1, 0.1, 0.1, 0.1, 0.1, 0.25, 0.25])
+              loss_weights=[2, 2, 2, 2, 2, 1, 1])
 # 查看网络结构
 model.summary()
 

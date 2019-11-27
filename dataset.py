@@ -10,11 +10,13 @@ import settings
 
 class LottoDataSet:
 
-    def __init__(self, path=settings.DATASET_PATH, train_data_rate=0.9):
+    def __init__(self, path=settings.DATASET_PATH, train_data_rate=0.9, shuffle=True):
         # 数据集路径
         self.path = path
         # 训练集占整体数据集的比例
         self.train_data_rate = train_data_rate
+        # 是否打乱数据集顺序
+        self.shuffle = shuffle
         # 训练集
         self.train_np_x = {}
         self.train_np_y = {}
@@ -115,8 +117,8 @@ class LottoDataSet:
             np_x['x{}'.format(i + 1)] = tmp_x
             np_y['y{}'.format(i + 1)] = tmp_y
         # ok,现在我们可以看一下数组的shape是否正确
-        for i in range(settings.FRONT_SIZE + settings.BACK_SIZE):
-            print(i + 1, np_x['x{}'.format(i + 1)].shape, np_y['y{}'.format(i + 1)].shape)
+        # for i in range(settings.FRONT_SIZE + settings.BACK_SIZE):
+        #     print(i + 1, np_x['x{}'.format(i + 1)].shape, np_y['y{}'.format(i + 1)].shape)
         # 划分数据集
         total_batch = len(np_x['x1'])  # 总样本数
         train_batch_num = int(total_batch * self.train_data_rate)  # 训练样本数
@@ -132,14 +134,72 @@ class LottoDataSet:
             test_np_x[x_index] = np_x[x_index][train_batch_num:]
             test_np_y[y_index] = np_y[y_index][train_batch_num:]
         # 打乱训练数据
-        random_seed = int(time.time())
-        # 使用相同的随机数种子，保证x和y的一一对应没有被破坏
-        for i in range(settings.FRONT_SIZE + settings.BACK_SIZE):
-            np.random.seed(random_seed)
-            np.random.shuffle(train_np_x['x{}'.format(i + 1)])
-            np.random.seed(random_seed)
-            np.random.shuffle(train_np_y['y{}'.format(i + 1)])
+        if self.shuffle:
+            random_seed = int(time.time())
+            # 使用相同的随机数种子，保证x和y的一一对应没有被破坏
+            for i in range(settings.FRONT_SIZE + settings.BACK_SIZE):
+                np.random.seed(random_seed)
+                np.random.shuffle(train_np_x['x{}'.format(i + 1)])
+                np.random.seed(random_seed)
+                np.random.shuffle(train_np_y['y{}'.format(i + 1)])
         self.train_np_x = train_np_x
         self.train_np_y = train_np_y
         self.test_np_x = test_np_x
         self.test_np_y = test_np_y
+
+    @property
+    def predict_data(self):
+        """
+        模型训练好之后，获取预测下期彩票序列(未发生事件)时使用的输入数据.
+        数据处理方式与clean_data方法相似，但只返回最新的连续的MAX_STEPS期开奖序列的x值
+        :return:
+        """
+        # 先从硬盘读取文件
+        lines = self.load_data_from_path()
+        # 去除引号，并使用逗号分割，将数据转成数组
+        x_nums = []
+        for line in lines:
+            # 下标0的位置是期号，直接去掉
+            nums = line.replace('"', '').split(',')[1:]
+            # 所有球的编号都减一，把1-35变成0-34,1-12变成0-11
+            # 这样便于后面做softmax
+            x_nums.append([int(x) - 1 for x in nums])
+        # 接着，把中奖序列中的七个数字拆开，按位置和时间纵轴组合，变成7组数据
+        num_seqs = {}
+        # 对于每一期的中奖序列
+        for line in x_nums:
+            # 对于一条中奖序列中的每一个数
+            for index, num in enumerate(line):
+                # 最后的数据格式{0: [1,2,3,4,...],1: [1,2,3,4,...],...,6: [1,2,3,4,...]}
+                num_seqs.setdefault(index, []).append(num)
+        # 根据时间序列，拆出来x和y数据集，每MAX_STEPS长度的连续序列构成一条数据的x，max_steps+1构成y
+        # 举例，假设MAX_STEPS=3，有序列[1,2,3,4,5,6],则[1,2,3->4],[2,3,4->5],[3,4,5->6]是组成的数据集
+        x = {}
+        for index, seqs in num_seqs.items():
+            x[index] = []
+            total = len(seqs)
+            # 存放本条x序列的，存放的是数字形式
+            tmp_x = []
+            # 将从i-MAX_STEPS到i(不包括i)的这一段长为MAX_STEPS的序列，逐个加入到tmp_x中
+            for j in range(total - settings.MAX_STEPS, total, 1):
+                tmp_x.append(seqs[j])
+            # 将这条记录添加到x数据集中
+            x[index].append(tmp_x)
+        # 我们现在需要把x里面的数字也转成one-hot形式，并转成numpy的array类型
+        np_x = {}
+        # 对应7个球构成的七组序列中的每一组
+        for i in range(settings.FRONT_SIZE + settings.BACK_SIZE):
+            # 获取样本数量
+            x_len = len(x[i])
+            # 根据球所处的前后区，分别进行初始化
+            if i < settings.FRONT_SIZE:
+                tmp_x = np.zeros((x_len, settings.MAX_STEPS, settings.FRONT_VOCAB_SIZE))
+            else:
+                tmp_x = np.zeros((x_len, settings.MAX_STEPS, settings.BACK_VOCAB_SIZE))
+            # 分别利用x,y中的数据修改tmp_x和tmp_y
+            for j in range(x_len):
+                for k, num in enumerate(x[i][j]):
+                    tmp_x[j][k][num] = 1
+            # 然后将tmp_x和tmp_y按照球所处的位置，加入到np_x和np_y中
+            np_x['x{}'.format(i + 1)] = tmp_x
+        return np_x
