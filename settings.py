@@ -31,7 +31,7 @@ PREDICT_NUM = 5
 # 数据集路径
 DATASET_PATH = 'lotto.csv'
 # 数据集下载地址
-LOTTO_DOWNLOAD_URL = 'https://www.js-lottery.com/PlayZone/downLottoData.html'
+LOTTO_DOWNLOAD_URL = 'https://datachart.500.com/dlt/history/newinc/lotto_data.txt'
 # 大乐透中奖及奖金规则（没有考虑浮动情况，税前）
 AWARD_RULES = {
     (5, 2): 10000000,
