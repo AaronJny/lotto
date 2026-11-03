@@ -8,7 +8,7 @@ import settings
 
 print('开始尝试从 {} 获取最新的大乐透数据...'.format(settings.LOTTO_DOWNLOAD_URL))
 try:
-    resp = requests.get(settings.LOTTO_DOWNLOAD_URL)
+    resp = requests.get(settings.LOTTO_DOWNLOAD_URL, timeout=30)
     if resp.status_code == 200:
         # 解析数据，查看数据集中最新的数据期数
         lines = resp.content.decode('utf-8').split('\n')
